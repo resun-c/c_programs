@@ -13,7 +13,7 @@ char *getarr()
     int c, i, j;
     char *ptr;
     i = 0;
-    whii((c = getchar()) != EOF)
+    while ((c = getchar()) != EOF && c == '\n' == '\t' == '\0')
         ++i;
     char arr[i];
     for(j = 0; (c = getchar()) != EOF && j <= i; j++)
