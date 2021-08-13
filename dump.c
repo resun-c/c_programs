@@ -1,36 +1,22 @@
 #include <stdio.h>
-
-#define PROCESSOR_SIZE 64
-#define MINUS_1 0x8000000000000000
-#define MAX_INT 0xffffffffffffffff
+#include <string.h>
 
 
+#if _INTEGRAL_MAX_BITS > 32
+	#define PROCESSOR_SIZE 64
+	#define MINUS_1 0x8000000000000000
+	#define MAX_INT 0xffffffffffffffff
+#else
+	#define PROCESSOR_SIZE 32
+	#define MINUS_1 0x80000000
+	#define MAX_INT 0xffffffff
+#endif
+
+int ibase, obase;
 char *bin, bytbuf[12], buf[PROCESSOR_SIZE + 1], prpbuf[81];
+char nuremals[] = "0123456789ABCDEF";
 
 
-/*
-
-   list of converters
-_______________________
-|  chartoint :	done  |
-|  bintoint  :	done  |
-|  bintohex  :	done  |
-|  bintoct   :	done  |
-|  intobin   :	done  |
-|  intohex   :	done  |
-|  intoct    :	done  |
-|  hextobin  :	done  |
-|  hextoint  :	done  |
-|  hextoct   :	done  |
-|  octobin   :	done  |
-|  octoint   :	done  |
-|  octohex   :	done  |
-_______________________
-
-*/
-
-
-/*	these fnction are from library strings.h. I wrote them just to test myself	*/
 
 charindex (char *s, char t)
 {
@@ -41,16 +27,7 @@ charindex (char *s, char t)
 	return -1;
 }
 
-
-strlen(char *s)
-{
-	int i;
-	i = 0;
-	while(s[i] != '\0') i++;
-	return i;
-}
-
-
+/* revers s */
 reverse(char *s)
 {
 	int c, i, j;
@@ -63,110 +40,77 @@ reverse(char *s)
 	}
 }
 
-
-strcat(char *s, char *t)
+/* checks whether the inputed string is valid or not */
+isvalid (char *s)
 {
-	while (*s != '\0') *s++;
+	int cond;
 
-	while ((*s++ = *t++) != '\0') ;
-}
+	char bins[] = "010 ";
+	char octs[] = "oq&$@\\01234567 ";
+	char hexs[] = "XHRUZhruxz%&#+=:-$\"\'\\ 0123456789ABCDEFabcdef";
 
-
-strcpy(char *s, char *t)
-{
-	while ((*s++ = *t++) != '\0') ;
-}
-
-
-/* end of library functions */
-
-
-/* functions hereafter are for checking and converting between int, bin, hex and oct */
-
-
-/* prepares a string containing binary numbers to show them in a convenient manner */
-
-prpbin (char *s) {
-	int l;
 	char *p;
 
-	for (*s; *s != '1'; *s++) ;
-	p = s;
-
-	reverse(p);
-	while ((l = strlen(p)) && ( l %= 4)) {
-		strcat(p, "0");
+	switch(ibase) {
+		case 2: p = bins; break;
+		case 8: p = octs; break;
+		case 10: return 1;
+		case 16: p = hexs; break;
+		default: break;
 	}
-	reverse (p);
-	strcpy(buf, p);
-}
-
-/* prepares a string containing 8 binary numbers to show them in a convenient manner */
-prpbyt (char *s)
-{
-	int i, j;
-	char *p;
-
-	reverse(s);
-
-	p = bytbuf;
-	for (i = 0; i < 8; i++) {
-		*p++ = *s++;
-	}
-	*p = '\0';
-	reverse(bytbuf);
-}
-
-/* prepares a string containing nibbles */
-
-prpnbl (char *s)
-{
-	int i;
-	char *p;
-	p = prpbuf;
-	while (*s != '\0') {
-		for (i = 0; i < 4 && *s != '\0'; i++) {
-			*p++ = *s++;
+	for(*s; *s != '\0'; *s++) {
+		if ((cond = charindex (p, *s)) < 0) {
+			fprintf (stderr, "%c not a standard base %d symbole\n", *s, ibase);
+			return -1;
 		}
-		*p++ = ' ';
 	}
-	*p = '\0';
+	return 1;
 }
 
-/* prepares a string containing hexadecimal numbers to show them in a convenient manner */
 
-prphex (char *s)
+prepnum (char *s)
 {
-	reverse(s);
-	prpnbl (s);
-	reverse (prpbuf);
-}
+	int bitgrp, i, l;
+	char *p, sprtr;
 
-/* prepares a string containing trio binary numbers to show them in a convenient manner */
-
-prptrio (char *s)
-{
-	int i;
-	char *p;
+	switch(obase) {
+		case 2: bitgrp = 4; sprtr = ' '; break;
+		case 8: bitgrp = 3; sprtr = ' '; break;
+		case 10: bitgrp = 3; sprtr = ','; break;
+		case 16: bitgrp = 4; sprtr = ' '; break;
+		default: break;
+	}
+	if (obase == 2) {
+		reverse (s);
+		while ((l = strlen(s)) && ( l %= bitgrp)) {
+			strcat(s, "0");
+		}
+		reverse (s);
+	}
 	p = prpbuf;
 
-	while (*s != '\0') {
-		for (i = 0; i < 3 && *s != '\0'; i++) {
-			*p++ = *s++;
-		}
-		*p++ = ' ';
-	}
-	*p = '\0';
-}
-
-/* prepares a string containing octal numbers to show them in a convenient manner */
-prpoct (char *s)
-{
 	reverse (s);
-	prptrio (s);
+	while (*s != '\0') {
+		for (i = 0; i < bitgrp && *s != '\0'; i++) {
+			*p++ = *s++;
+		}
+		*p++ = sprtr;
+	}
+	*--p = '\0';
 	reverse (prpbuf);
 }
 
+
+/* char string s to numeral of base */
+
+long long chartoint (char *s, int base)
+{
+	long long d = 0;
+	for(*s; *s != '\0'; *s++) {
+		d = base * d + (_Idigt(*s, base));
+	}
+	return d;
+}
 
 /* convert character into integers */
 
@@ -176,13 +120,15 @@ switch (x)
 	{
 	case '0':
 	case '1':
+		return(x-'0');
 	case '2':
 	case '3':
 	case '4':
 	case '5':
 	case '6':
 	case '7':
-		return(x-'0');
+		if (base > 2)
+			return(x-'0');
 	case '8':
 	case '9':
 		if (base > 8)
@@ -207,378 +153,96 @@ switch (x)
 return(-1);
 }
 
-/* checks if the string contains only ints */
+/* intobase: int n is converted into the the numeral system defined by base and put into buf */
 
-isint (char *s)
+intobase (long long n, int base)
 {
-	int cond;
-	char ints[] = "0123456789";
+        register long long  a;
 
-	for(*s; *s != '\0'; *s++) {
-		if ((cond = charindex (ints, *s)) < 0) {
-			fprintf (stderr, "%c not a standard integer symbole\n", *s);
-			return -1;
-		}
-	}
-	return 1;
+        if (n<0) {      /* shouldn't happen */
+                putchar('-');
+                n = -n;
+        }
+        if(a = n/base)
+                intobase (a, base);
+        *bin++ = nuremals[(int)(n%base)];
 }
-
-/* checks if the string contains only bins */
-
-isbin (char *s)
-{
-	int cond;
-	char bins[] = "010";
-
-	for(*s; *s != '\0'; *s++) {
-		if ((cond = charindex (bins, *s)) < 0) {
-			fprintf (stderr, "%c not a standard binary symbole\n", *s);
-			return -1;
-		}
-	}
-	return 1;
-}
-
-/* checks if the string contains only hexs */
-
-ishex (char *s)
-{
-	int cond;
-	char hexs[] = "XHRUZhruxz%&#+=:-$\"\'\\0123456789ABCDEFabcdef";
-
-	for(*s; *s != '\0'; *s++) {
-		if ((cond = charindex (hexs, *s)) < 0) {
-			fprintf (stderr, "%c not a standard hexadecimal symbole\n", *s);
-			return -1;
-		}
-	}
-	return 1;
-}
-
-/* checks if the string contains only octs */
-
-isoct (char *s)
-{
-	int cond;
-	char octals[] = "oq&$@\\01234567";
-
-	for(*s; *s != '\0'; *s++) {
-		if ((cond = charindex (octals, *s)) < 0) {
-			fprintf (stderr, "%c not a standard octal symbole\n", *s);
-			return -1;
-		}
-	}
-	return 1;
-}
-
-/* convert string into integers */
-
-long long chartoint (char *s)
-{
-	long long d = 0;
-	for(*s; *s != '\0'; *s++) {
-		d = 10 * d + (_Idigt(*s, 10));
-	}
-	return d;
-}
-
-
-/* intobin: int to binary */
-intobin (long long n)
-{
-	unsigned long long a;
-	for (a = MINUS_1; a >= 0x01; a /= 0x02) {
-		if (n & a) {
-			*bin++ = '1';
-		} else {
-			*bin++ = '0';
-		}
-	}
-	*bin = '\0';
-}
-
-/* intohex: int to hexadecimal */
-intohex (long long n)
-{
-        int d;
-	long long a;
-        if (a = n>>4) {
-                intohex ( a & MAX_INT);
-	}
-        d = n&017;
-        *bin++ =  d > 9 ? 'A'+d-10 : '0' + d;
-}
-
-
-
-/* intoct: int to octal */
-intoct (long long n)
-{
-        int d;
-	long long a;
-        if (a = n>>3)
-                 intoct (a & MAX_INT);
-        d = n & 0x07;
-        *bin++ =  '0' + d;
-}
-
-/* bintoint: return the int value of the binary string s */
-
-long long bintoint (char *s)
-{
-	int i, l;
-	long long d, d1;
-	char *p;
-
-	p = buf;
-	d = 0;
-
-	reverse (s);
-	strcpy (p, s);
-
-	while ((l = strlen(p)) <= 64) {
-		strcat (p, "0");
-	}
-	reverse (p);
-
-	for (i = 0; buf[i] != '\0'; i++) {
-		d1 = (long long) (buf[i] - '0');
-		d |= d1 << (64 - i);
-	}
-	return d;
-}
-
-/* bintohex:  binary to hexadecimals */
-
-bintohex (char *s)
-{
-	long long i;
-
-	i = bintoint(s);
-	bin = buf;
-
-	intohex (i);
-	*bin = '\0';
-}
-
-/* bintoct: binary to octals */
-
-bintoct (char *s)
-{
-	long long i;
-
-	i = bintoint(s);
-	bin = buf;
-
-	intoct (i);
-	*bin = '\0';
-}
-
-/* hextobin : hexadecimal char to binary string*/
-
-char *hextobin (c)
-{
-	char *s = (char *) malloc (sizeof (char) * 5);
-
-	switch(c) {
-		case '0':
-			s = "0000";
-			break;
-		case '1':
-			s = "0001";
-			break;
-		case '2':
-			s = "0010";
-			break;
-		case '3':
-			s = "0011";
-			break;
-		case '4':
-			s = "0100";
-			break;
-		case '5':
-			s = "0101";
-			break;
-		case '6':
-			s = "0110";
-			break;
-		case '7':
-			s = "0111";
-			break;
-		case '8':
-			s = "1000";
-			break;
-		case '9':
-			s = "1001";
-			break;
-		case 'A': case 'a':
-			s = "1010";
-			break;
-		case 'B': case 'b':
-			s = "1011";
-			break;
-		case 'C': case 'c':
-			s = "1100";
-			break;
-		case 'D': case 'd':
-			s = "1101";
-			break;
-		case 'E': case 'e':
-			s = "1110";
-			break;
-		case 'F': case 'f':
-			s = "1111";
-			break;
-		default:
-			s = "";
-			break;
-	}
-	return s;
-}
-
-/* hextoint :  return int of hexadecimal string s */
-
-long long hextoint (char *s)
-{
-	long long d = 0;
-	for(*s; *s != '\0'; *s++) {
-		d = 16 * d + (_Idigt(*s, 16));
-	}
-	return d;
-}
-
-/* hextoct :  hexadecimal string to octal */
-
-hextoct (char *s)
-{
-	long long d;
-	d = hextoint(s);
-	intoct(d);
-}
-
-
-
-/* octobin : octalal char to binary string */
-
-char *octobin (c)
-{
-	char *s = (char *) malloc (sizeof (char) * 4);
-
-	switch(c) {
-		case '0':
-			s = "000";
-			break;
-		case '1':
-			s = "001";
-			break;
-		case '2':
-			s = "010";
-			break;
-		case '3':
-			s = "011";
-			break;
-		case '4':
-			s = "100";
-			break;
-		case '5':
-			s = "101";
-			break;
-		case '6':
-			s = "110";
-			break;
-		case '7':
-			s = "111";
-			break;
-		default:
-			s = "";
-			break;
-	}
-	return s;
-}
-
-/* octoint : octal string to */;
-
-long long octoint (char *s)
-{
-	long long d = 0;
-	for(*s; *s != '\0'; *s++) {
-		d = 8 * d + (_Idigt(*s, 8));
-	}
-	return d;
-}
-
-/* octohex : octal string to hexadecimal */;
-octohex (char *s)
-{
-	long long d;
-	d = octoint(s);
-	intohex(d);
-}
-
 
 main (int argc, char *argv[])
 {
-	int c, j, n, aflag, fflag, bflag, iflag, hflag, oflag, b, i, h, o, cond;
+	int c, j, n, aflag, fflag, cond;
 	FILE *fp;
-	char *cp, *istr, *p;
+	char *cp, *istr, *p, *numnm = (char *) malloc (sizeof(char) * 4);
 	long long idata = 0;
-	aflag = bflag = fflag = iflag = hflag = oflag = b = i = h = o = 0;
+	aflag = fflag = 0;
 
 	for (cp = *++argv; *cp; *cp++) {
 		switch(*cp) {
 			case 'b':
-				bflag++;
+				ibase = 2;
 				switch(*++cp) {
 					case 'i':
-						i++;
+						obase = 10;
+						numnm = "int";
 						break;
 					case 'h':
-						h++;
+						obase = 16;
+						numnm = "hex";
 						break;
 					case 'o':
-						o++;
+						obase = 8;
+						numnm = "oct";
 						break;
 				}
 				break;
 			case 'i':
-				iflag++;
+				ibase = 10;
 				switch(*++cp) {
 					case 'b':
-						b++;
+						obase = 2;
+						numnm = "bin";
 						break;
 					case 'h':
-						h++;
+						obase = 16;
+						numnm = "hex";
 						break;
 					case 'o':
-						o++;
+						obase = 8;
+						numnm = "oct";
 						break;
 				}
 				break;
 			case 'h':
-				hflag++;
+				ibase = 16;
 				switch(*++cp) {
 					case 'b':
-						b++;
+						obase = 2;
+						numnm = "bin";
 						break;
 					case 'i':
-						i++;
+						obase = 10;
+						numnm = "int";
 						break;
 					case 'o':
-						o++;
+						obase = 8;
+						numnm = "oct";
 						break;
 				}
 				break;
 			case 'o':
-				oflag++;
+				ibase = 8;
 				switch(*++cp) {
 					case 'b':
-						b++;
+						obase = 2;
+						numnm = "bin";
 						break;
 					case 'i':
-						i++;
+						obase = 10;
+						numnm = "int";
 						break;
 					case 'h':
-						h++;
+						obase = 16;
+						numnm = "hex";
 						break;
 				}
 				break;
@@ -594,131 +258,145 @@ main (int argc, char *argv[])
 	}
 
 	if (aflag) {
-		if (iflag) {
-			if ((cond = isint (istr)) > 0) {
-				if (b) {
-					idata = chartoint (istr);
-					bin = buf;
-					intobin (idata);
-					prpbin (buf);
-					prpnbl (buf);
-					printf ("bin:  %s\n", prpbuf);
-				} else if (h) {
-					idata = chartoint (istr);
-					bin = buf;
-					intohex (idata);
-					*bin = '\0';
-					prphex (buf);
-					printf ("hex:%s\n", prpbuf);
-				} else if (o) {
-					idata = chartoint (istr);
-					bin = buf;
-					intoct (idata);
-					*bin = '\0';
-					prpoct (buf);
-					printf ("oct: %s\n", prpbuf);
-				} else {
-					idata = chartoint (istr);
-					bin = buf;
-					intobin (idata);
-					prpbin (buf);
-					prpnbl (buf);
-					printf ("bin: %s\n", prpbuf);
-					bin = buf;
-					intohex (idata);
-					*bin = '\0';
-					prphex (buf);
-					printf ("hex: %s\n", prpbuf);
-					bin = buf;
-					intoct (idata);
-					*bin = '\0';
-					prpoct (buf);
-					printf ("oct: %s\n", prpbuf);
-				}
+		if ((cond = isvalid (istr)) < 0)
+			return;
+		idata = chartoint (istr, ibase);
+		if (ibase == 10) {
+			if (obase) {
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("%s: %s\n", numnm, prpbuf);
+			} else {
+				obase = 2;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("bin: %s\n", prpbuf);
+				obase = 8;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("oct: %s\n", prpbuf);
+				obase = 16;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("hex: %s\n", prpbuf);
 			}
-		} else if (bflag) {
-			if ((cond = isbin (istr)) > 0) {
-				if (i) {
-					idata = bintoint (istr);
-					printf ("int: %lld\n", idata);
-				} else if (h) {
-					bintohex (istr);
-					prphex (buf);
-					printf ("hex: %s\n", prpbuf);
-				} else if (o) {
-					bintoct (istr);
-					prpoct (buf);
-					printf ("oct: %s\n", prpbuf);
-				} else {
-					idata = bintoint (istr);
-					printf ("int: %lld\n", idata);
-					bintohex (istr);
-					prphex (buf);
-					printf ("hex: %s\n", prpbuf);
-					bintoct (istr);
-					prpoct (buf);
-					printf ("oct: %s\n", prpbuf);
-				}
+		} else if (ibase == 2) {
+			if (obase) {
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("%s: %s\n", numnm, prpbuf);
+			} else {
+				obase = 8;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("oct: %s\n", prpbuf);
+				obase = 10;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("int: %s\n", prpbuf);
+				obase = 16;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("hex: %s\n", prpbuf);
 			}
-		} else if (hflag) {
-			if ((cond = ishex (istr)) > 0) {
-				if (b) {
-					printf ("bin: ");
-					for (j = 0; istr[j] != '\0'; j++)
-						printf ("%s", hextobin(istr[j]));
-				} else if (i) {
-					idata = hextoint (istr);
-					printf ("int: %lld\n", idata);
-				} else if (o) {
-					bin = buf;
-					hextoct (istr);
-					prptrio (buf);
-					printf ("oct: %s\n", prpbuf);
-				}
+		}else if (ibase == 8) {
+			if (obase) {
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("%s: %s\n", numnm, prpbuf);
+			} else {
+				obase = 2;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("bin: %s\n", prpbuf);
+				obase = 10;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("int: %s\n", prpbuf);
+				obase = 16;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("hex: %s\n", prpbuf);
 			}
-		} else if (oflag) {
-			if ((cond = isoct (istr)) > 0) {
-				if (b) {
-					for (j = 0; istr[j] != '\0'; j++)
-						printf ("bin: %s\n", octobin(istr[j]));
-				} else if (i) {
-					idata = octoint (istr);
-					printf ("int: %lld\n", idata);
-				} else if (h) {
-					bin = buf;
-					octohex (istr);
-					prpnbl (buf);
-					printf ("hex: %s\n", prpbuf);
-				}
+		} else if (ibase == 16) {
+			if (obase) {
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("%s: %s\n", numnm, prpbuf);
+			} else {
+				obase = 2;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("bin: %s\n", prpbuf);
+				obase = 8;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("oct: %s\n", prpbuf);
+				obase = 10;
+				bin = buf;
+				intobase (idata, obase);
+				*bin = '\0';
+				prepnum (buf);
+				printf ("int: %s\n", prpbuf);
 			}
-		}
+		} 
 	} else if (fflag) {
 		fp = fopen (istr, "r");
 		if (fp != NULL) {
-			if (iflag) {
-				if (b) {
+			if (ibase == 10) {
+				if (obase == 2) {
 					while ((c = getc (fp)) != EOF) {
 						bin = buf;
-						intobin (c);
-						prpbyt (buf);
-						prpnbl (bytbuf);
-						printf ("%s\t", prpbuf);
-					}
-				} else if (h) {
-					while ((c = getc (fp)) != EOF) {
-						bin = buf;
-						intohex (c);
+						intobase (c, obase);
 						*bin = '\0';
-						prphex (buf);
-						printf ("%s\t", prpbuf);
+						prepnum (buf);
+						printf ("%s ", prpbuf);
 					}
-				} else if (o) {
+				} else if (obase == 8) {
 					while ((c = getc (fp)) != EOF) {
 						bin = buf;
-						intoct (c);
+						intobase (c, obase);
 						*bin = '\0';
-						prpoct (buf);
-						printf ("%s\t", prpbuf);
+						prepnum (buf);
+						printf ("%s ", prpbuf);
+					}
+				} else if (obase == 16) {
+					while ((c = getc (fp)) != EOF) {
+						bin = buf;
+						intobase (c, obase);
+						*bin = '\0';
+						prepnum (buf);
+						printf ("%s ", prpbuf);
 					}
 				}
 			}
