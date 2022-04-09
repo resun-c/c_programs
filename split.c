@@ -2,9 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-char *strdup(char* s);
 char *sstrdup(char *i, char *t);
-char **appendl(char **l, char *s);
+char **ppcappend(char **l, char *s);
 
 char **split(char *s, char t)
 {
@@ -13,54 +12,67 @@ char **split(char *s, char t)
 	i = NULL;
 	l = NULL;
 
-	i = s;
+	i = s;											/* set the beginning */
 
 	while (*s++) {
-		if (*s == t) {
+		if (*s == t) {								/* splitter match */
 			printf("b___________________________\n");
-			j = sstrdup(i, s);
-			printf("split: %s\n", j);
-			l = appendl(l, j);
-			printf("returned l\n");
-			printfl(l);
-			i = ++s;
+
+			j = sstrdup(i, s);						/* duplicate from the begining untill the splitter */
+			if (j == NULL) {
+				printf("split:\tcouldn't duplicate sub-string\n");
+				return l;
+			}
+
+			printf("split:\t\treturned sub-string: %s\n", j);				/* error checking */
+
+			l = ppcappend(l, j);					/* append the string to the list of char */
+			if (l == NULL) {
+				printf("split:\tcouldn't append sub-string\n");
+				return l;
+			}
+
+			printf("split:\t\treturned l:\n"); 				/* print the list */
+			printppc(l);
+
+			i = ++s;								/* set the next beginning to the next char of the splitter */
+
 			printf("e___________________________\n\n");
 		}
 	}
 	return l;
 }
+/* duplicate sub-string */
 char *sstrdup(char *i, char *t)
 {
 	char *p, q;
+	printf("sstrdup got:\t%s\n", i);
 
-	q = *t;
-	*t = '\0';
-	p = strdup(i);
-	printf("sstrdup: %s\n", p);
-	*t = q;
+	q = *t;											/* store the current value of *t */
+	*t = '\0';										/* put \0 in the place of *t */
+	p = strdup(i);									/* duplicate the string */
+	if (p == NULL) {
+		printf("sstrdup:\tcouldn't allocate memory\n");
+		return NULL;
+	}
+	*t = q;											/* put back the value of *t */
 
 	return p;
 }
-char *strdup(char *s)
-{
-	char *p;
-	p = (char *) malloc (strlen(s) + 1);
-	if (p != NULL)
-		strcpy(p, s);
-	return p;
-}
-int printfl(char **l)
+/* print a pointer to pointer to char */
+int printppc(char **l)
 {
 	int c;
 
 	c = 0;
 	while (*l != NULL) {
-		printf("l:%p\t%s\n", l, *l++);
+		printf("%d:%p\t%s\n", c, l, *l++);
 		c++;
 	}
 	return c;
 }
-int listlen(char **l)
+/* return the  length of pointer to pointer to char */
+int ppclen(char **l)
 {
 	int count;
 
@@ -71,33 +83,39 @@ int listlen(char **l)
 		++count;
 	return count;
 }
-char **appendl(char **l, char *s)
+char **ppcappend(char **l, char *s)
 {
 	int len;
 	char **l1, **l2, **l3;
 
-	l3 = l;
-	len = (listlen(l) + 1) * sizeof(char **);
-	l = (char **) realloc (l, len);
-	l2 = l;
-	printf("realloced\n");
-	if (len > 4) {
-	//if (l != NULL) {
-		while (*l != NULL) {
-			l++;
-		}
-		/*while ((*l1 = *l) != NULL) {
-			l1++;
-			l++;
-		}*/
+	l3 = l;											/* store the address of l to free it later */
+
+	len = (ppclen(l) + 1) * sizeof(char **);		/* new length of the string array is the length of string array plus 1 times size of  */
+
+	l1 = (char **) malloc (len);					/* allocate memory of the new length  */
+	if (l1 == NULL) {
+		printf("ppcappend:\tcouldn't allocate memory\n");
+		return NULL;
 	}
 
-	*l++ = s;
-	*l = NULL;
-	return l2;
+	l2 = l1;										/* store that to return */
+
+	printf("ppcappend:\tallocated %p\n", l1);		/* erroe checking */
+
+	if (l != NULL) {								/* if l is not NULL then there's already something in the array */
+		while ((*l1 = *l) != NULL) {				/* copy the content of the old array to newly allocated array */
+			l1++;
+			l++;
+		}
+		free(l3);
+	}
+
+	*l1++ = s;										/* l1 either points to the begining of the new array or the end of the array */
+	*l1 = NULL;										/* put NULL at the end of l1 */
+	return l2;										/* return the initial address of l1 */
 }
 main(int argc, char *argv[])
 {
-	char **list = split(argv[1], ';');
-	printfl(list);
+	char **list = split("huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;", ';');
+	printppc(list);
 }
