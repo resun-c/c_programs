@@ -1,36 +1,7 @@
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-char *sstrdup(char *i, char *t);
-char **ppcappend(char **l, char *s);
-
-char **split(char *s, char spltr)
-{
-	char *nxt_ini, *subs, **ppc;
-
-	nxt_ini = NULL;
-	subs = NULL;
-	ppc = NULL;
-
-	nxt_ini = s;											/* set the beginning */
-
-	while (*s++) {
-		if (*s == spltr) {								/* splitter match */
-
-			subs = sstrdup(nxt_ini, s);						/* duplicate from the begining untill the splitter */
-			if (subs == NULL)
-				return ppc;
-
-			ppc = ppcappend(ppc, subs);					/* append the string to the list of char */
-			if (ppc == NULL)
-				return ppc;
-
-			nxt_ini = ++s;								/* set the next beginning to the next char of the splitter */
-		}
-	}
-	return ppc;
-}
 /* duplicate sub-string */
 char *sstrdup(char *ini, char *termn)
 {
@@ -69,6 +40,7 @@ int ppclen(char **ppc)
 		++count;
 	return count;
 }
+/* append a pointer to char at the end of a pointer to pointer to char*/
 char **ppcappend(char **ppc, char *s)
 {
 	int len;
@@ -96,8 +68,36 @@ char **ppcappend(char **ppc, char *s)
 	*nppc = NULL;										/* put NULL at the end of l1 */
 	return rppc;										/* return the initial address of l1 */
 }
-main(int argc, char *argv[])
+/* split a string in to substring(s) when spltr is found */
+char **split(char *s, char spltr)
 {
-	char **list = split(argv[2], argv[1][0]);
-	printppc(list);
+	char *nxt_ini, *subs, **ppc;
+
+	nxt_ini = NULL;
+	subs = NULL;
+	ppc = NULL;
+
+	nxt_ini = s;											/* set the beginning */
+
+	while (*s++) {
+		if (*s == spltr) {									/* splitter match */
+			subs = sstrdup(nxt_ini, s);						/* duplicate from the begining untill the splitter */
+			if (subs == NULL)
+				return ppc;
+
+			ppc = ppcappend(ppc, subs);						/* append the string to the list of char */
+			if (ppc == NULL)
+				return ppc;
+
+			nxt_ini = ++s;									/* set the next beginning to the next char of the splitter */
+		}
+	}
+
+	if ((s - nxt_ini) > 1) {
+		subs = sstrdup(nxt_ini, s);
+		if (subs != NULL)
+			ppc = ppcappend(ppc, subs);
+	}
+	
+	return ppc;
 }
