@@ -5,117 +5,99 @@
 char *sstrdup(char *i, char *t);
 char **ppcappend(char **l, char *s);
 
-char **split(char *s, char t)
+char **split(char *s, char spltr)
 {
-	char *i, *j, **l;
+	char *nxt_ini, *subs, **ppc;
 
-	i = NULL;
-	l = NULL;
+	nxt_ini = NULL;
+	subs = NULL;
+	ppc = NULL;
 
-	i = s;											/* set the beginning */
+	nxt_ini = s;											/* set the beginning */
 
 	while (*s++) {
-		if (*s == t) {								/* splitter match */
-			printf("b___________________________\n");
+		if (*s == spltr) {								/* splitter match */
 
-			j = sstrdup(i, s);						/* duplicate from the begining untill the splitter */
-			if (j == NULL) {
-				printf("split:\tcouldn't duplicate sub-string\n");
-				return l;
-			}
+			subs = sstrdup(nxt_ini, s);						/* duplicate from the begining untill the splitter */
+			if (subs == NULL)
+				return ppc;
 
-			printf("split:\t\treturned sub-string: %s\n", j);				/* error checking */
+			ppc = ppcappend(ppc, subs);					/* append the string to the list of char */
+			if (ppc == NULL)
+				return ppc;
 
-			l = ppcappend(l, j);					/* append the string to the list of char */
-			if (l == NULL) {
-				printf("split:\tcouldn't append sub-string\n");
-				return l;
-			}
-
-			printf("split:\t\treturned l:\n"); 				/* print the list */
-			printppc(l);
-
-			i = ++s;								/* set the next beginning to the next char of the splitter */
-
-			printf("e___________________________\n\n");
+			nxt_ini = ++s;								/* set the next beginning to the next char of the splitter */
 		}
 	}
-	return l;
+	return ppc;
 }
 /* duplicate sub-string */
-char *sstrdup(char *i, char *t)
+char *sstrdup(char *ini, char *termn)
 {
-	char *p, q;
-	printf("sstrdup got:\t%s\n", i);
+	char *subs, tmp;
 
-	q = *t;											/* store the current value of *t */
-	*t = '\0';										/* put \0 in the place of *t */
-	p = strdup(i);									/* duplicate the string */
-	if (p == NULL) {
-		printf("sstrdup:\tcouldn't allocate memory\n");
-		return NULL;
-	}
-	*t = q;											/* put back the value of *t */
+	tmp = *termn;											/* store the current value of *t */
+	*termn = '\0';											/* put \0 in the place of *t */
 
-	return p;
+	subs = strdup(ini);										/* duplicate the string */
+
+	*termn = tmp;											/* put back the value of *t */
+
+	return subs;
 }
 /* print a pointer to pointer to char */
-int printppc(char **l)
+int printppc(char **ppc)
 {
 	int c;
 
 	c = 0;
-	while (*l != NULL) {
-		printf("%d:%p\t%s\n", c, l, *l++);
+	while (*ppc != NULL) {
+		printf("%p\t%s\n", ppc, *ppc++);
 		c++;
 	}
 	return c;
 }
 /* return the  length of pointer to pointer to char */
-int ppclen(char **l)
+int ppclen(char **ppc)
 {
 	int count;
 
 	count = 0;
-	if (l == NULL)
+	if (ppc == NULL)
 		return 0;
-	while (*l++ != NULL)
+	while (*ppc++ != NULL)
 		++count;
 	return count;
 }
-char **ppcappend(char **l, char *s)
+char **ppcappend(char **ppc, char *s)
 {
 	int len;
-	char **l1, **l2, **l3;
+	char **nppc, **rppc, **temp;
 
-	l3 = l;											/* store the address of l to free it later */
+	temp = ppc;											/* store the address of l to free it later */
 
-	len = (ppclen(l) + 1) * sizeof(char **);		/* new length of the string array is the length of string array plus 1 times size of  */
+	len = (ppclen(ppc) + 2) * sizeof(char **);			/* new length of the string array is the length of string array plus 1 times size of  */
 
-	l1 = (char **) malloc (len);					/* allocate memory of the new length  */
-	if (l1 == NULL) {
-		printf("ppcappend:\tcouldn't allocate memory\n");
+	nppc = (char **) malloc (len);						/* allocate memory of the new length  */
+	if (nppc == NULL)
 		return NULL;
-	}
 
-	l2 = l1;										/* store that to return */
+	rppc = nppc;										/* store that to return */
 
-	printf("ppcappend:\tallocated %p\n", l1);		/* erroe checking */
-
-	if (l != NULL) {								/* if l is not NULL then there's already something in the array */
-		while ((*l1 = *l) != NULL) {				/* copy the content of the old array to newly allocated array */
-			l1++;
-			l++;
+	if (ppc != NULL) {									/* if l is not NULL then there's already something in the array */
+		while ((*nppc = *ppc) != NULL) {				/* copy the content of the old array to newly allocated array */
+			nppc++;
+			ppc++;
 		}
-		free(l3);
+		free(temp);
 	}
 
-	*l1++ = s;										/* l1 either points to the begining of the new array or the end of the array */
-	*l1 = NULL;										/* put NULL at the end of l1 */
-	return l2;										/* return the initial address of l1 */
+	*nppc++ = s;										/* l1 either points to the begining of the new array or the end of the array */
+	*nppc = NULL;										/* put NULL at the end of l1 */
+	return rppc;										/* return the initial address of l1 */
 }
 main(int argc, char *argv[])
 {
-	char **list = split("huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;huhu;", ';');
+	char **list = split(argv[2], argv[1][0]);
 	printppc(list);
 }
