@@ -7,7 +7,7 @@
 typedef struct _stack {
 	int sp;
 	int lsp;
-	char **s;
+	char **ppc;
 } stack;
 
 /* duplicate sub-string */
@@ -29,7 +29,7 @@ void init_stack(stack *stk)
 {
 	stk->sp = 0;
 	stk->lsp = STACK_SIZE;
-	stk->s = malloc(STACK_SIZE * sizeof(char **));
+	stk->ppc = malloc(STACK_SIZE * sizeof(char **));
 }
 /* grow the size of the stack */
 void grow_stack(stack *stk)
@@ -41,13 +41,13 @@ void grow_stack(stack *stk)
 
 	if (nppc != NULL) {
 		for (i = 0; i <= stk->sp; i++) {						/* copy the content of the old array to newly allocated array */
-			nppc[i] = stk->s[i];
+			nppc[i] = stk->ppc[i];
 		}
-		free(stk->s);
+		free(stk->ppc);
 	}
 
 	stk->lsp = STACK_SIZE;
-	stk->s = nppc;
+	stk->ppc = nppc;
 }
 /* print a pointer to pointer to char */
 int printppc(char **ppc)
@@ -67,7 +67,7 @@ int printstack(stack *stk)
 	int i;
 
 	for (i = 0; i < stk->sp; i++)
-		printf("%s\n", stk->s[i]);
+		printf("%s\n", stk->ppc[i]);
 
 	return i;
 }
@@ -77,7 +77,7 @@ int stackappend(stack *stk, char *s)
 	if (stk->lsp < 1)
 		grow_stack(stk);
 
-	stk->s[stk->sp++] = s;
+	stk->ppc[stk->sp++] = s;
 	stk->lsp--;
 
 	return 1;
@@ -98,11 +98,11 @@ char **split(char *s, char spltr)
 		if (*s == spltr) {									/* splitter match */
 			subs = sstrdup(nxt_ini, s);						/* duplicate from the begining untill the splitter */
 			if (subs == NULL)
-				return ppc->s;
+				return ppc->ppc;
 
 			stackappend(ppc, subs);							/* append the string to the stack */
 			if (ppc == NULL)
-				return ppc->s;
+				return ppc->ppc;
 
 			nxt_ini = ++s;									/* set the next beginning to the next char of the splitter */
 		}
@@ -114,7 +114,7 @@ char **split(char *s, char spltr)
 			stackappend(ppc, subs);
 	}
 	stackappend(ppc, NULL);									/* terminating the pointer to pointer to char */
-	return ppc->s;
+	return ppc->ppc;
 }
 
 main(int argc, char *argv[])
