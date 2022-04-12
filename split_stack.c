@@ -108,7 +108,7 @@ char **split(char *s, char spltr)
 		}
 	}
 
-	if ((s - nxt_ini) > 1) {
+	if ((s - nxt_ini) > 1) {								/* if the source string doesn't end with the splitter */
 		subs = sstrdup(nxt_ini, s);
 		if (subs != NULL)
 			stackappend(ppc, subs);
