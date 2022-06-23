@@ -64,7 +64,7 @@ chain *add_block(chain *t, char *data)
 	hsh = rand();
 	
 	if (t != NULL && t->nxt != NULL) {
-		add_block(t->nxt, data);
+		t-nxt = add_block(t->nxt, data);
 	} else if (t != NULL && t->nxt == NULL) {
 		t1 = (chain *) malloc(sizeof(chain));
 		sprintf(t1->prnt_hsh, "%s", t->hsh);
